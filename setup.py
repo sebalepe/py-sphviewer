@@ -36,7 +36,8 @@ class BuildExt(build_ext):
     # Never check these; they're always added.
     # Note that we don't support MSVC here.
     compile_flags = {"unix": ["-std=c99", "-w",
-                              "-ffast-math", "-I{:s}".format(np.get_include())]}
+                              "-ffast-math", "-I{:s}".format(np.get_include()),
+                             "-I/usr/include/python3.6m"]}
 
     def build_extensions(self):
         ct = self.compiler.compiler_type
