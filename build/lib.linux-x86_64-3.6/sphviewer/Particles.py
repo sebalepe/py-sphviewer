@@ -31,7 +31,9 @@ class Particles(object):
                  hsml = None,
                  nb = 32,
                  verbose = False,
-                 sort = False):
+                 sort = False,
+                limited = False, # Addon
+                nb_recursive = None): # Addon
         """
         The Particles class is a container that stores the essential SPH particle data. Once initialised, this class can be passed
         to the Scene class along with the Camera class to prepare and initialise the scene.  
@@ -65,11 +67,20 @@ class Particles(object):
         - :method:`get_mass()`
         - :method:`get_hsml()`
         - :method:`get_nb()`
+        
+        
+      Addons: Two arguments have been added, limited and nb_recursive:
+      
+      Use *limited=True* to limit the hsml values to the median, usefull to have a more deep perseption on the structure of the simulation.
+      
+      The *nb_recursive=float* calls to the function __hsml_recursive, this function determinates a new hsml comparing every value of h with a given value parameter, it's a recursive function meant to obtein the maximum values of h under the given parameter with the maximum number of neighbors used, using one neighbor less every iteration and changing only the values that are over the parameter. In the end every value of h that still is over the paremeter given is changed to a very small value, to make it a puntual point. This is usefull when the simulation have low density regions and the Smoothing Lengs bubbles turn to big, decreasing the resolution of the simulation.
         """
 
         self._name = 'PARTICLES'
         self.__verbose = verbose
         npart = np.size(mass)
+        self._limited = limited #Addon
+        self._recursive = nb_recursive #Addon
 
         if(hsml is None):
             hsml = self.__det_hsml(pos,nb)
@@ -144,9 +155,28 @@ class Particles(object):
         hsml = d[:,nb-1]
         return hsml
     
+    ###Addon
+    def __hsml_recursive(self, pos, tree, hsml, value, nb):
+        changes = np.where(hsml > value)
+        if len(changes[0]) == 0:
+            return hsml
+        if nb==5:
+            hsml = np.where(hsml > value, value*1e-2, hsml)
+            return hsml
+        hsml_new = self.__nbsearch(pos, nb-1, tree)
+        hsml = np.where(hsml > value, hsml_new, hsml)
+        return self.__hsml_recursive(pos, tree, hsml, value, nb-1) 
+    ###end
+    
     def __det_hsml(self, pos, nb):
         tree = self.__make_kdtree(pos)
         hsml = self.__nbsearch(pos, nb, tree)
+        if self._limited: #addon
+            median = np.median(hsml)
+            hsml = np.where(hsml > median, median, hsml)
+        if self._recursive is not None: #addon
+            value = self._recursive * np.median(hsml)
+            hsml = self.__hsml_recursive(pos, tree, hsml, value, nb)
         return hsml
 
     def __make_kdtree_old(self,pos):

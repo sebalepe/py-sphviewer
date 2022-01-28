@@ -28,7 +28,9 @@ import numpy as np
 class QuickView(object):
     def __init__(self, pos, mass=None, hsml=None, nb=None,
                  logscale=True, plot=True, min_hsml=None,
-                 max_hsml=None, **kwargs):
+                 max_hsml=None,
+                 limited=False, nb_recursive=None, # Addons
+                 **kwargs):
 
         """
         Quickview is a simple wrapper of the sphviewer API. 
@@ -53,7 +55,11 @@ class QuickView(object):
            the current active figure.
          - min_hsml / max_hsml: Physical values of the minimum / maximum 
            smoothing lengths. Only used when defined. 
-         
+         - Addons: 
+               1) limited (optional): Boolean value. If true, it limits the hsml values to the median
+               2) nb_recursive (optional): Float value. If not None, changes the maximun value of the Smoothing radius
+                                           multiplying the given value with the median and calling the __hsml_recursive
+                                           function on Particles.
          **kwargs 
          These include the parameters of the Camera:
 
@@ -63,9 +69,11 @@ class QuickView(object):
             mass = np.ones(len(pos))
 
         if(nb == None):
-            self._P = sph.Particles(pos, mass, hsml)
+            self._P = sph.Particles(pos, mass, hsml, 
+                                    limited=limited, nb_recursive=nb_recursive) # addons
         else:
-            self._P = sph.Particles(pos, mass, hsml, nb)
+            self._P = sph.Particles(pos, mass, hsml, nb, 
+                                    limited=limited, nb_recursive=nb_recursive) # addons
 
         if((min_hsml is not None) or (max_hsml is not None)):
             hsml = self.get_hsml()
